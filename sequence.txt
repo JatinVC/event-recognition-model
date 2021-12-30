@@ -1,0 +1,2 @@
+-data_dir ./dataset
+-out_dir ./logs
