@@ -60,3 +60,8 @@ docs/source/changelog.md
 data.txt
 *.aedat
 logs
+
+spikingjelly
+snnenv
+
+data
