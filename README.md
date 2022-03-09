@@ -3,18 +3,14 @@ Pull the code using:
 `git pull https://github.com/JatinVC/event-recognition-model.git`
 
 create a python environment using conda command:
-`conda create --name snnenv`
+`python -m venv snnenv`
 
 activate the environment by doing:
-`conda activate snnenv`
+* navigate into the snnenv folder, and locate the activate script
+* run the activate script and you should be in the environment
 
 install all requirements by doing:
-`conda install --file requirements.txt`
-
-add the environment to jupyter by doing:
-`python -m ipykernel install --user --name=snnenv`
+`pip install --r requirements.txt`
 
 deactivate the environment by doing:
-`conda deactivate`
-
-run jupyter notebook to see the code and run the notebook using the environment
+`deactivate`
