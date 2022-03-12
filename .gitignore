@@ -65,3 +65,6 @@ spikingjelly
 snnenv
 
 data
+output
+events_np
+frames_number_16_split_by_number

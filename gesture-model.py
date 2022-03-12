@@ -3,7 +3,6 @@
 
 # In[10]:
 
-
 # imports
 import torch
 import torch.nn as nn
@@ -12,8 +11,8 @@ from torch.cuda import amp
 from spikingjelly.clock_driven import functional, surrogate, layer, neuron
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.tensorboard import SummaryWriter
-from spikingjelly.datasets.dvs128_gesture import DVS128Gesture
-from datasets.eventdataset import EventDataset
+from datasets import FYPDataset
+# from datasets.eventdataset import EventDataset
 import time
 import os
 import argparse
@@ -71,6 +70,7 @@ class PythonNet(nn.Module):
         self.vote = VotingLayer(10)
         
     def forward(self, x: torch.Tensor):
+        print('1')
         x = x.permute(1, 0, 2, 3, 4)
         out_spikes = self.vote(self.fc(self.conv(x[0])))
         for t in range(1, x.shape[0]):
@@ -161,7 +161,7 @@ def main():
     parser.add_argument('-j', default=4, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
     parser.add_argument('-channels', default=128, type=int, help='channels of Conv2d in SNN')
-    parser.add_argument('-data_dir', type=str, default='./data', help='root dir')
+    parser.add_argument('-data_dir', type=str, default='./', help='root dir')
     parser.add_argument('-out_dir', type=str, default='./output', help='root dir for saving logs and checkpoint')
 
 #     parser.add_argument('-resume', type=str, help='resume from the checkpoint path')
@@ -204,8 +204,10 @@ def main():
 #     else:
 #         raise NotImplementedError(args.lr_scheduler)
 
-    train_set = EventDataset(args.data_dir, train=True, data_type='frame', split_by='number', frames_number=args.T)
-    test_set = EventDataset(args.data_dir, train=False, data_type='frame', split_by='number', frames_number=args.T)
+    train_set = FYPDataset(args.data_dir, train=True, data_type='frame', split_by='number', frames_number=args.T)
+    # test_set = FYPDataset(args.data_dir, train=False, data_type='frame', split_by='number', frames_number=args.T)
+    # train_set = EventDataset(args.data_dir, train=True, data_type='frame', split_by='number', frames_number=args.T)
+    # test_set = EventDataset(args.data_dir, train=False, data_type='frame', split_by='number', frames_number=args.T)
 
     train_data_loader = DataLoader(
         dataset=train_set,
@@ -215,13 +217,13 @@ def main():
         drop_last=True,
         pin_memory=True)
 
-    test_data_loader = DataLoader(
-        dataset=test_set,
-        batch_size=args.b,
-        shuffle=False,
-        num_workers=args.j,
-        drop_last=False,
-        pin_memory=True)
+    # test_data_loader = DataLoader(
+    #     dataset=test_set,
+    #     batch_size=args.b,
+    #     shuffle=False,
+    #     num_workers=args.j,
+    #     drop_last=False,
+    #     pin_memory=True)
 
 #     scaler = None
 #     if args.amp:
@@ -238,7 +240,7 @@ def main():
 #         start_epoch = checkpoint['epoch'] + 1
 #         max_test_acc = checkpoint['max_test_acc']
 
-    out_dir = os.path.join(args.out_dir, f'T_{args.T}_b_{args.b}_c_{args.channels}_{args.opt}_lr_{args.lr}_')
+    out_dir = os.path.join(args.out_dir, f'T_{args.T}_b_{args.b}_c_{args.channels}_SGD_lr_{args.lr}_')
 #     if args.lr_scheduler == 'CosALR':
     out_dir += f'CosALR_{args.T_max}'
 #     elif args.lr_scheduler == 'StepLR':
@@ -272,18 +274,18 @@ def main():
             frame = frame.float().to(args.device)
             label = label.to(args.device)
             label_onehot = F.one_hot(label, 11).float()
-            if args.amp:
-                with amp.autocast():
-                    out_fr = net(frame)
-                    loss = F.mse_loss(out_fr, label_onehot)
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
-            else:
+            # if args.amp:
+            with amp.autocast():
                 out_fr = net(frame)
                 loss = F.mse_loss(out_fr, label_onehot)
-                loss.backward()
-                optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+            # else:
+            #     out_fr = net(frame)
+            #     loss = F.mse_loss(out_fr, label_onehot)
+            #     loss.backward()
+            #     optimizer.step()
 
             train_samples += label.numel()
             train_loss += loss.item() * label.numel()
