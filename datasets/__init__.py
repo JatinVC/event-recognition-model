@@ -18,8 +18,6 @@ import tqdm
 import shutil
 import pandas as pd
 from re import M
-from tkinter import W
-from tkinter.filedialog import test
 from torch.utils.data import Dataset, DataLoader
 from posixpath import split
 
@@ -705,7 +703,7 @@ class FYPDataset(NeuromorphicDatasetFolder):
         This function is written by referring to https://github.com/fangwei123456/spikingjelly/blob/master/spikingjelly/datasets/__init__.py
         '''
         '''eventually make it so that the filename is sent, but for testing purposes, we only use this one file'''
-        df = pd.read_csv("./data/collapse_8mm_bias_fo_1637_chris_1.csv", names=["x", "y", "p", "t"], sep=",")
+        df = pd.read_csv(file_name, names=["x", "y", "p", "t"], sep=",")
         
         data = {
             'x': np.array(df['x']),
@@ -747,7 +745,8 @@ class FYPDataset(NeuromorphicDatasetFolder):
             # make directory for labels when we come across the label for the first time
             if label not in label_file_num.keys():
                 label_file_num[label] = 0
-                os.mkdir(os.path.join(output_dir, str(label)))
+                if not os.path.isdir(os.path.join(output_dir, str(label))):
+                    os.mkdir(os.path.join(output_dir, str(label)))
 
             t_start = csv_data[i][1]
             t_end = csv_data[i][2]

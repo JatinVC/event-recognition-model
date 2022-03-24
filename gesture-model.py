@@ -17,7 +17,8 @@ import time
 import os
 import argparse
 import numpy as np
-
+import logging
+import sys
 
 # In[5]:
 
@@ -29,7 +30,11 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(_seed_)
 
-
+# logging setup
+logging.basicConfig(filename=f'logs/runlog.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
+logger = logging.getLogger()
+sys.stderr.write = logger.error
+sys.stdout.write = logger.info
 # In[6]:
 
 
@@ -63,15 +68,15 @@ class PythonNet(nn.Module):
             nn.Linear(channels * 4 * 4, channels * 2 * 2, bias=False),
             neuron.LIFNode(tau=2.0, surrogate_function=surrogate.ATan(), detach_reset=True),
             layer.Dropout(0.5),
-            nn.Linear(channels * 2 * 2, 110, bias=False),
+            nn.Linear(channels * 2 * 2, 20, bias=False),
             neuron.LIFNode(tau=2.0, surrogate_function=surrogate.ATan(), detach_reset=True)
         )
         
         self.vote = VotingLayer(10)
         
     def forward(self, x: torch.Tensor):
-        print('1')
         x = x.permute(1, 0, 2, 3, 4)
+        torch.reshape(x, (128, 128))
         out_spikes = self.vote(self.fc(self.conv(x[0])))
         for t in range(1, x.shape[0]):
             out_spikes += self.vote(self.fc(self.conv(x[t])))
@@ -205,7 +210,7 @@ def main():
 #         raise NotImplementedError(args.lr_scheduler)
 
     train_set = FYPDataset(args.data_dir, train=True, data_type='frame', split_by='number', frames_number=args.T)
-    # test_set = FYPDataset(args.data_dir, train=False, data_type='frame', split_by='number', frames_number=args.T)
+    test_set = FYPDataset(args.data_dir, train=False, data_type='frame', split_by='number', frames_number=args.T)
     # train_set = EventDataset(args.data_dir, train=True, data_type='frame', split_by='number', frames_number=args.T)
     # test_set = EventDataset(args.data_dir, train=False, data_type='frame', split_by='number', frames_number=args.T)
 
@@ -217,13 +222,13 @@ def main():
         drop_last=True,
         pin_memory=True)
 
-    # test_data_loader = DataLoader(
-    #     dataset=test_set,
-    #     batch_size=args.b,
-    #     shuffle=False,
-    #     num_workers=args.j,
-    #     drop_last=False,
-    #     pin_memory=True)
+    test_data_loader = DataLoader(
+        dataset=test_set,
+        batch_size=args.b,
+        shuffle=False,
+        num_workers=args.j,
+        drop_last=False,
+        pin_memory=True)
 
 #     scaler = None
 #     if args.amp:
